@@ -137,22 +137,6 @@ GitHub Actions workflow is in `.github/workflows/ci.yml` and runs:
 - API tests (`npm test`)
 - Compose config validation (`docker compose config`)
 
-## Publish to GitHub repository
-
-If your machine has the official GitHub CLI, run:
-
-```bash
-gh auth login
-gh repo create multiservice-docker-opsboard --private --source=. --remote=origin --push
-```
-
-If `gh` command is not the official CLI on your machine, create the repository in GitHub UI and then run:
-
-```bash
-git remote add origin https://github.com/<your-username>/multiservice-docker-opsboard.git
-git push -u origin main
-```
-
 ## Free deployment (Oracle Cloud Always Free VM)
 
 This repo includes a ready deployment path under `deploy/oracle-free/`.
@@ -169,20 +153,7 @@ bash deploy/oracle-free/bootstrap.sh
 bash deploy/oracle-free/deploy.sh <vm_public_ip> <vm_user> <repo_url>
 ```
 
-Example:
-
-```bash
-bash deploy/oracle-free/deploy.sh 203.0.113.10 opc https://github.com/<you>/multiservice-docker-opsboard.git
-```
-
 ### 3) Auto-deploy from GitHub Actions on every push
 
 Workflow file: `.github/workflows/deploy-oracle-free.yml`
 
-Add these GitHub repository secrets:
-
-- `DEPLOY_HOST` → your VM public IP/DNS
-- `DEPLOY_USER` → VM SSH user (for Oracle Ubuntu often `ubuntu`, for Oracle Linux often `opc`)
-- `DEPLOY_SSH_KEY` → private SSH key contents used to access VM
-
-After secrets are set, every push to `main` triggers deployment.

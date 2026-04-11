@@ -1,0 +1,32 @@
+groups:
+  - name: api-alerts
+    rules:
+      - alert: ApiDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "API service is down"
+          description: "Prometheus cannot scrape the API target (api:4000) for more than 1 minute."
+
+      - alert: HighApiLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(ms_api_http_request_duration_ms_bucket[5m])) by (le)) > 500
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API latency (p95)"
+          description: "API p95 latency is above 500ms for 5 minutes."
+
+      - alert: HighApi5xxRate
+        expr: (sum(rate(ms_api_http_request_duration_ms_count{status_code=~"5.."}[5m])) / sum(rate(ms_api_http_request_duration_ms_count[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API error rate"
+          description: "More than 5% of API requests are failing with 5xx over 5 minutes."

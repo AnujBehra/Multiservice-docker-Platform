@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpsBoard • Multi-Service App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Dockerized Multi-Service Platform</p>
+          <h1>OpsBoard</h1>
+          <p class="subtitle">
+            Beautiful UI + Backend API + PostgreSQL + Redis + Prometheus + Grafana
+          </p>
+        </div>
+        <div class="quick-links">
+          <a href="http://localhost:9090" target="_blank" rel="noreferrer">Prometheus ↗</a>
+          <a href="http://localhost:3000" target="_blank" rel="noreferrer">Grafana ↗</a>
+        </div>
+      </header>
+
+      <section class="grid">
+        <article class="card metrics">
+          <h2>Backend Health</h2>
+          <div class="metric-row">
+            <div>
+              <span class="label">API</span>
+              <strong id="api-state">-</strong>
+            </div>
+            <div>
+              <span class="label">Database</span>
+              <strong id="db-state">-</strong>
+            </div>
+            <div>
+              <span class="label">Redis</span>
+              <strong id="redis-state">-</strong>
+            </div>
+          </div>
+          <div class="metric-row">
+            <div>
+              <span class="label">Todos</span>
+              <strong id="todos-count">0</strong>
+            </div>
+            <div>
+              <span class="label">Cache Hits</span>
+              <strong id="cache-hits">0</strong>
+            </div>
+            <div>
+              <span class="label">Cache Misses</span>
+              <strong id="cache-misses">0</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="card todos-card">
+          <div class="todos-header">
+            <h2>Todo Command Center</h2>
+            <button id="refresh-btn" class="ghost-btn">Refresh</button>
+          </div>
+          <form id="todo-form" class="todo-form">
+            <input id="todo-input" type="text" placeholder="Ship a feature, fix a bug, celebrate ✅" required />
+            <button type="submit">Add Todo</button>
+          </form>
+          <div id="status" class="status"></div>
+          <ul id="todo-list" class="todo-list"></ul>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

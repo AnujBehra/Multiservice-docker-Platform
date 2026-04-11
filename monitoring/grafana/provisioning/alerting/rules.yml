@@ -1,0 +1,89 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: grafana-managed-api-alerts
+    folder: Multi-Service
+    interval: 1m
+    rules:
+      - uid: grafana-api-down
+        title: API Down (Grafana)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: up{job="api"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              expression: A < 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: math
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          source: grafana
+        annotations:
+          summary: API target is down
+          description: Grafana rule detected API up metric below 1 for longer than 1 minute.
+        isPaused: false
+
+      - uid: grafana-high-latency
+        title: High API p95 Latency (Grafana)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: histogram_quantile(0.95, sum(rate(ms_api_http_request_duration_ms_bucket[5m])) by (le))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              expression: A > 500
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: math
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          source: grafana
+        annotations:
+          summary: API p95 latency is high
+          description: Grafana rule detected p95 latency above 500ms for over 5 minutes.
+        isPaused: false

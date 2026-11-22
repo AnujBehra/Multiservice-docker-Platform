@@ -1,6 +1,7 @@
 # OpsBoard: Multi-Service Backend & Caching Platform
 
 [![CI](https://github.com/AnujBehra/Multiservice-docker-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AnujBehra/Multiservice-docker-Platform/actions)
+[![Demo](https://img.shields.io/badge/Demo-Vercel%20Live-000000?logo=vercel&logoColor=white)](https://web-seven-roan-29.vercel.app)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
 [![Node](https://img.shields.io/badge/Node.js-20-339933?logo=node.js&logoColor=white)](api/package.json)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](docker-compose.yml)

@@ -1,32 +1,22 @@
-# Cloud-Native Multi-Service Backend & Caching Platform (OpsBoard)
+# OpsBoard: Multi-Service Backend & Caching Platform
 
 [![CI](https://github.com/AnujBehra/Multiservice-docker-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AnujBehra/Multiservice-docker-Platform/actions)
-![Docker](https://img.shields.io/badge/Docker-Multi--Stage%20Compose-2496ED?logo=docker&logoColor=white)
-![Node](https://img.shields.io/badge/Node.js-20-339933?logo=node.js&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-7%20Cache-DC382D?logo=redis&logoColor=white)
-![Observability](https://img.shields.io/badge/Observability-Prometheus%20%2B%20Grafana-F46800?logo=grafana&logoColor=white)
-![Nginx](https://img.shields.io/badge/Reverse%20Proxy-Nginx-009639?logo=nginx&logoColor=white)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![Node](https://img.shields.io/badge/Node.js-20-339933?logo=node.js&logoColor=white)](api/package.json)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](docker-compose.yml)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](docker-compose.yml)
+[![Observability](https://img.shields.io/badge/Prometheus%20%2B%20Grafana-F46800?logo=grafana&logoColor=white)](monitoring)
+[![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?logo=nginx&logoColor=white)](web/nginx.conf)
 
-> **Resume Project:**
-> **Cloud-Native Multi-Service Backend & Caching Platform** | *Node.js, PostgreSQL, Redis, Docker, Prometheus, Grafana, Nginx, Railway*  
-> • Designed microservices backend with secure JWT auth, token rotation, rate limiting, and input validation, fully documented with interactive OpenAPI/Swagger specifications.  
-> • Optimized database throughput by integrating Redis caching layer and connection pooling, reducing p95 database read latency by 65% under concurrent load tests.  
-> • Authored multi-stage Dockerfiles slashing image size by 70%, and orchestrated multi-container services behind Nginx reverse proxy with automated health checks.  
-> • Deployed on cloud infrastructure with continuous integration, integrating Prometheus metric scrapers and custom Grafana dashboards to monitor endpoint throughput and cache hit ratios.
+OpsBoard is a containerized multi-service platform demonstrating backend service coordination, Redis caching, and full-stack observability:
 
-OpsBoard is a complete production-style containerized multi-service platform:
+- **Web:** Nginx reverse proxy serving the static dashboard frontend (`http://localhost:8080`)
+- **API:** Node.js / Express REST API with input validation, rate limiting, and OpenAPI/Swagger documentation
+- **Database:** PostgreSQL with connection pooling
+- **Cache:** Redis caching layer reducing database read latency under concurrent load
+- **Observability:** Prometheus metrics scraping and Grafana dashboards tracking throughput and cache hit ratios
 
-- `web` → Nginx + static frontend (served on `http://localhost:8080`)
-- `api` → Node.js/Express REST API
-- `db` → PostgreSQL
-- `redis` → Redis cache
-- `prometheus` → metrics scraping + storage
-- `grafana` → monitoring dashboards
-
-The app is intentionally practical: the frontend manages a live todo work queue while showing API, database, Redis, cache, uptime, and observability signals.
-
-## 60-second reviewer path
+## Quick Start
 
 ```bash
 make up
@@ -36,23 +26,17 @@ make quality
 
 Then open `http://localhost:8080`.
 
-## Why this is portfolio-ready
+## Architecture & Features
 
-The stack now includes production-oriented practices commonly expected in industry teams:
+Key engineering practices implemented across the stack:
 
-- Secure API middleware (`helmet`, rate limiting, CORS config, compression)
-- Structured request logging (`pino-http`)
-- Input validation with schema-based checks (`zod`)
-- Readiness endpoint (`/ready`) + Docker healthchecks
-- Graceful shutdown handling for containers
-- Metrics + dashboards + alerting (Prometheus + Grafana)
-- Full todo lifecycle API: create, list, complete/reopen, delete
-- Nginx reverse proxy with security headers and gzip
-- Backend-powered production evidence panel in the UI
-- Fresh databases seed meaningful demo tasks automatically
-- Makefile for one-command setup, quality checks, logs, reset, and smoke testing
-- API reference and OpenAPI contract under `docs/`
-- Automated quality gates in CI (lint, tests, compose validation)
+- **Security & Validation:** Secure headers (`helmet`), IP rate limiting, CORS configuration, and schema validation with `zod`.
+- **Database Optimization:** PostgreSQL connection pooling and Redis key-value cache with configurable TTL.
+- **Microservices Orchestration:** Multi-stage Dockerfiles orchestrated behind an Nginx reverse proxy with gzip compression and health check routing.
+- **Container Health:** Liveness and readiness endpoints (`/health`, `/ready`) configured with Docker health checks and graceful shutdown handling.
+- **Observability:** Native Prometheus `/metrics` scraping and pre-provisioned Grafana dashboards for throughput, p95 latency, and cache hit/miss metrics.
+- **API Specification:** Fully documented OpenAPI contract (`docs/openapi.yaml`) and API reference (`docs/API.md`).
+- **CI/CD Automation:** Automated quality gates in GitHub Actions executing ESLint, unit tests, and Docker Compose validation on push.
 
 ## Architecture
 

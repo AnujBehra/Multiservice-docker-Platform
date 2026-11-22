@@ -11,7 +11,8 @@ services:
       grafana:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      start_period: 20s
       interval: 10s
       timeout: 3s
       retries: 10
@@ -29,6 +30,10 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: app_db
       REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:8080}"
+      TODO_CACHE_TTL_SECONDS: "${TODO_CACHE_TTL_SECONDS:-30}"
+      RATE_LIMIT_MAX_REQUESTS_PER_MINUTE: "${RATE_LIMIT_MAX_REQUESTS_PER_MINUTE:-300}"
+      DEMO_SEED_ENABLED: "${DEMO_SEED_ENABLED:-true}"
     depends_on:
       db:
         condition: service_healthy

@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: OpsBoard API
+  version: 1.0.0
+  description: API for the OpsBoard multi-service Docker platform.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Check API, database, and Redis health
+      responses:
+        "200":
+          description: All dependencies are healthy
+        "503":
+          description: One or more dependencies are unavailable
+  /ready:
+    get:
+      summary: Readiness probe
+      responses:
+        "200":
+          description: Ready
+        "503":
+          description: Not ready
+  /api/todos:
+    get:
+      summary: List todos
+      responses:
+        "200":
+          description: Todo list
+    post:
+      summary: Create a todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTodo"
+      responses:
+        "201":
+          description: Created todo
+        "400":
+          description: Invalid payload
+  /api/todos/{id}:
+    patch:
+      summary: Update a todo
+      parameters:
+        - $ref: "#/components/parameters/TodoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTodo"
+      responses:
+        "200":
+          description: Updated todo
+        "400":
+          description: Invalid request
+        "404":
+          description: Todo not found
+    delete:
+      summary: Delete a todo
+      parameters:
+        - $ref: "#/components/parameters/TodoId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Todo not found
+  /api/stats:
+    get:
+      summary: Get runtime dashboard stats
+      responses:
+        "200":
+          description: Runtime stats
+  /api/platform:
+    get:
+      summary: Get platform delivery evidence
+      responses:
+        "200":
+          description: Platform evidence
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Prometheus text exposition format
+components:
+  parameters:
+    TodoId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    CreateTodo:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 140
+    UpdateTodo:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 140
+        completed:
+          type: boolean

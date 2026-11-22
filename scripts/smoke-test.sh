@@ -15,4 +15,13 @@ echo "Fetching todo list"
 LIST_RESPONSE="$(curl -fsS "${BASE_URL}/api/todos")"
 echo "List response: ${LIST_RESPONSE}"
 
+TODO_ID="$(printf '%s' "${CREATE_RESPONSE}" | node -e 'let input=""; process.stdin.on("data", d => input += d); process.stdin.on("end", () => process.stdout.write(String(JSON.parse(input).id)));')"
+
+echo "Marking todo ${TODO_ID} complete"
+UPDATE_RESPONSE="$(curl -fsS -X PATCH "${BASE_URL}/api/todos/${TODO_ID}" -H 'Content-Type: application/json' -d '{"completed":true}')"
+echo "Update response: ${UPDATE_RESPONSE}"
+
+echo "Deleting todo ${TODO_ID}"
+curl -fsS -X DELETE "${BASE_URL}/api/todos/${TODO_ID}" >/dev/null
+
 echo "Smoke test completed successfully."

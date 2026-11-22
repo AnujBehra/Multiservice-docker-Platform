@@ -4,69 +4,119 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OpsBoard • Multi-Service App</title>
+    <meta
+      name="description"
+      content="A Docker Compose operations dashboard for a Node API, Postgres, Redis, Prometheus, and Grafana stack."
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="page">
       <header class="hero">
-        <div>
+        <div class="hero-copy">
           <p class="eyebrow">Dockerized Multi-Service Platform</p>
           <h1>OpsBoard</h1>
           <p class="subtitle">
-            A real-time dashboard for monitoring and managing your multi-service application
+            Manage work items while watching API, database, Redis, cache, and observability signals in one clean control room.
           </p>
         </div>
         <div class="quick-links">
-          <a href="http://localhost:9090" target="_blank" rel="noreferrer">Prometheus ↗</a>
-          <a href="http://localhost:3000" target="_blank" rel="noreferrer">Grafana ↗</a>
+          <a href="/health" target="_blank" rel="noreferrer">Health</a>
+          <a href="/metrics" target="_blank" rel="noreferrer">Metrics</a>
+          <a href="http://localhost:9090" target="_blank" rel="noreferrer">Prometheus</a>
+          <a href="http://localhost:3000" target="_blank" rel="noreferrer">Grafana</a>
         </div>
       </header>
 
+      <section class="status-strip" aria-label="Service health">
+        <div class="status-tile">
+          <span class="label">API</span>
+          <strong id="api-state">-</strong>
+        </div>
+        <div class="status-tile">
+          <span class="label">Postgres</span>
+          <strong id="db-state">-</strong>
+        </div>
+        <div class="status-tile">
+          <span class="label">Redis</span>
+          <strong id="redis-state">-</strong>
+        </div>
+        <div class="status-tile">
+          <span class="label">Updated</span>
+          <strong id="updated-at">-</strong>
+        </div>
+      </section>
+
       <section class="grid">
-        <article class="card metrics">
-          <h2>Backend Health</h2>
-          <div class="metric-row">
+        <article class="panel metrics">
+          <div class="panel-heading">
             <div>
-              <span class="label">API</span>
-              <strong id="api-state">-</strong>
+              <p class="section-kicker">Runtime</p>
+              <h2>Operational Metrics</h2>
             </div>
-            <div>
-              <span class="label">Database</span>
-              <strong id="db-state">-</strong>
-            </div>
-            <div>
-              <span class="label">Redis</span>
-              <strong id="redis-state">-</strong>
-            </div>
+            <span id="api-base" class="pill">local proxy</span>
           </div>
-          <div class="metric-row">
-            <div>
+          <div class="metric-grid">
+            <div class="metric-card">
               <span class="label">Todos</span>
               <strong id="todos-count">0</strong>
             </div>
-            <div>
+            <div class="metric-card">
+              <span class="label">Open</span>
+              <strong id="todos-open">0</strong>
+            </div>
+            <div class="metric-card">
+              <span class="label">Completed</span>
+              <strong id="todos-completed">0</strong>
+            </div>
+            <div class="metric-card">
               <span class="label">Cache Hits</span>
               <strong id="cache-hits">0</strong>
             </div>
-            <div>
+            <div class="metric-card">
               <span class="label">Cache Misses</span>
               <strong id="cache-misses">0</strong>
+            </div>
+            <div class="metric-card">
+              <span class="label">API Uptime</span>
+              <strong id="uptime">0s</strong>
             </div>
           </div>
         </article>
 
-        <article class="card todos-card">
+        <article class="panel todos-panel">
           <div class="todos-header">
-            <h2>Todo Command Center</h2>
-            <button id="refresh-btn" class="ghost-btn">Refresh</button>
+            <div>
+              <p class="section-kicker">Work Queue</p>
+              <h2>Todo Command Center</h2>
+            </div>
+            <button id="refresh-btn" class="ghost-btn" type="button">Refresh</button>
           </div>
           <form id="todo-form" class="todo-form">
-            <input id="todo-input" type="text" placeholder="Ship a feature, fix a bug" required />
+            <input
+              id="todo-input"
+              type="text"
+              maxlength="140"
+              placeholder="Ship a feature, fix a bug"
+              aria-label="Todo title"
+              required
+            />
             <button type="submit">Add Todo</button>
           </form>
           <div id="status" class="status"></div>
           <ul id="todo-list" class="todo-list"></ul>
         </article>
+      </section>
+
+      <section class="proof-panel" aria-label="Delivery evidence">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Delivery Evidence</p>
+            <h2>Production Signals</h2>
+          </div>
+          <span id="environment" class="pill">loading</span>
+        </div>
+        <div id="platform-grid" class="proof-grid"></div>
       </section>
     </main>
 

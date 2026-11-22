@@ -7,13 +7,14 @@ const pinoHttp = require("pino-http");
 const { Pool } = require("pg");
 const { createClient } = require("redis");
 const promClient = require("prom-client");
-const { validateCreateTodo } = require("./validation");
+const { validateCreateTodo, validateTodoId, validateUpdateTodo } = require("./validation");
 require("dotenv").config();
 
 const app = express();
 const port = process.env.PORT || 4000;
 const corsOrigins = (process.env.CORS_ORIGINS || "*").split(",").map((item) => item.trim());
 const todoCacheTtlSeconds = Number(process.env.TODO_CACHE_TTL_SECONDS || 30);
+const demoSeedEnabled = process.env.DEMO_SEED_ENABLED !== "false";
 
 app.set("trust proxy", 1);
 
@@ -79,6 +80,18 @@ const todosTotalGauge = new promClient.Gauge({
   registers: [metricsRegistry],
 });
 
+const todosOpenGauge = new promClient.Gauge({
+  name: "ms_api_todos_open",
+  help: "Current open todos in database",
+  registers: [metricsRegistry],
+});
+
+const todosCompletedGauge = new promClient.Gauge({
+  name: "ms_api_todos_completed",
+  help: "Current completed todos in database",
+  registers: [metricsRegistry],
+});
+
 const appMetrics = {
   cacheHits: 0,
   cacheMisses: 0,
@@ -116,6 +129,10 @@ redisClient.on("error", (err) => {
   console.error("Redis error:", err.message);
 });
 
+async function clearTodoCache() {
+  await redisClient.del("todos:all");
+}
+
 async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS todos (
@@ -125,6 +142,48 @@ async function initDb() {
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
+}
+
+async function seedDemoTodos() {
+  if (!demoSeedEnabled) {
+    return;
+  }
+
+  const existing = await pool.query("SELECT COUNT(*)::INT AS count FROM todos");
+
+  if (existing.rows[0].count > 0) {
+    return;
+  }
+
+  const demoTodos = [
+    ["Review Grafana latency dashboard", false],
+    ["Rotate production secrets before launch", false],
+    ["Document rollback playbook", false],
+    ["Verify Redis cache hit ratio", true],
+    ["Run Docker Compose smoke test", true],
+    ["Confirm CI quality gates", true],
+  ];
+
+  for (const [title, completed] of demoTodos) {
+    await pool.query("INSERT INTO todos (title, completed) VALUES ($1, $2)", [title, completed]);
+  }
+}
+
+async function updateTodosTotalGauge() {
+  const countResult = await pool.query(`
+    SELECT
+      COUNT(*)::INT AS count,
+      COUNT(*) FILTER (WHERE completed)::INT AS completed,
+      COUNT(*) FILTER (WHERE NOT completed)::INT AS open
+    FROM todos
+  `);
+  const counts = countResult.rows[0];
+
+  todosTotalGauge.set(counts.count);
+  todosOpenGauge.set(counts.open);
+  todosCompletedGauge.set(counts.completed);
+
+  return counts;
 }
 
 app.get("/health", async (_req, res) => {
@@ -181,7 +240,7 @@ app.get("/api/todos", async (_req, res) => {
       "SELECT id, title, completed, created_at FROM todos ORDER BY id DESC"
     );
 
-    todosTotalGauge.set(result.rowCount);
+    await updateTodosTotalGauge();
 
     await redisClient.setEx(cacheKey, todoCacheTtlSeconds, JSON.stringify(result.rows));
 
@@ -207,10 +266,9 @@ app.post("/api/todos", async (req, res) => {
     );
 
     todosCreatedCounter.inc();
-    const countResult = await pool.query("SELECT COUNT(*)::INT AS count FROM todos");
-    todosTotalGauge.set(countResult.rows[0].count);
+    await updateTodosTotalGauge();
 
-    await redisClient.del("todos:all");
+    await clearTodoCache();
 
     return res.status(201).json(result.rows[0]);
   } catch {
@@ -218,13 +276,80 @@ app.post("/api/todos", async (req, res) => {
   }
 });
 
+app.patch("/api/todos/:id", async (req, res) => {
+  const idValidation = validateTodoId(req.params.id);
+
+  if (!idValidation.success) {
+    return res.status(400).json({ message: idValidation.error.issues[0]?.message || "Invalid todo id" });
+  }
+
+  const payloadValidation = validateUpdateTodo(req.body || {});
+
+  if (!payloadValidation.success) {
+    return res.status(400).json({
+      message: payloadValidation.error.issues[0]?.message || "Invalid request payload",
+    });
+  }
+
+  const updates = payloadValidation.data;
+
+  try {
+    const result = await pool.query(
+      `
+        UPDATE todos
+        SET
+          title = COALESCE($2, title),
+          completed = COALESCE($3, completed)
+        WHERE id = $1
+        RETURNING id, title, completed, created_at
+      `,
+      [idValidation.data, updates.title ?? null, updates.completed ?? null]
+    );
+
+    if (!result.rowCount) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
+
+    await clearTodoCache();
+    await updateTodosTotalGauge();
+    return res.json(result.rows[0]);
+  } catch {
+    return res.status(500).json({ message: "Failed to update todo" });
+  }
+});
+
+app.delete("/api/todos/:id", async (req, res) => {
+  const idValidation = validateTodoId(req.params.id);
+
+  if (!idValidation.success) {
+    return res.status(400).json({ message: idValidation.error.issues[0]?.message || "Invalid todo id" });
+  }
+
+  try {
+    const result = await pool.query("DELETE FROM todos WHERE id = $1 RETURNING id", [idValidation.data]);
+
+    if (!result.rowCount) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
+
+    await clearTodoCache();
+    await updateTodosTotalGauge();
+
+    return res.status(204).send();
+  } catch {
+    return res.status(500).json({ message: "Failed to delete todo" });
+  }
+});
+
 app.get("/api/stats", async (_req, res) => {
   try {
-    const dbCountResult = await pool.query("SELECT COUNT(*)::INT AS count FROM todos");
+    const dbCounts = await updateTodosTotalGauge();
     const cachePing = await redisClient.ping();
 
     return res.json({
-      todosTotal: dbCountResult.rows[0].count,
+      todosTotal: dbCounts.count,
+      todosOpen: dbCounts.open,
+      todosCompleted: dbCounts.completed,
       cacheHits: appMetrics.cacheHits,
       cacheMisses: appMetrics.cacheMisses,
       cacheConnected: cachePing === "PONG",
@@ -234,6 +359,21 @@ app.get("/api/stats", async (_req, res) => {
   } catch {
     return res.status(500).json({ message: "Failed to fetch stats" });
   }
+});
+
+app.get("/api/platform", (_req, res) => {
+  return res.json({
+    name: "OpsBoard",
+    environment: process.env.NODE_ENV || "development",
+    stack: ["Nginx", "Node.js", "PostgreSQL", "Redis", "Prometheus", "Grafana"],
+    qualityGates: ["lint", "unit tests", "npm audit", "docker compose config", "smoke test"],
+    releasePath: "Docker Compose locally, Oracle Always Free VM deploy scripts, GitHub Actions deploy workflow",
+    observability: {
+      metrics: "/metrics",
+      dashboards: "Grafana provisioning",
+      alerts: "Prometheus rules and Grafana managed alerts",
+    },
+  });
 });
 
 app.get("/metrics", async (_req, res) => {
@@ -263,8 +403,8 @@ async function start() {
   try {
     await redisClient.connect();
     await initDb();
-    const countResult = await pool.query("SELECT COUNT(*)::INT AS count FROM todos");
-    todosTotalGauge.set(countResult.rows[0].count);
+    await seedDemoTodos();
+    await updateTodosTotalGauge();
 
     httpServer = app.listen(port, () => {
       console.log(`API service is running on port ${port}`);
